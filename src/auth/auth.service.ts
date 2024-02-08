@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -11,6 +11,8 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
   ) {}
+
+  private readonly logger = new Logger(AuthService.name);
 
   async signup(signupDto: SignupDto) {
     const { name, email, password } = signupDto;
@@ -27,7 +29,7 @@ export class AuthService {
         email,
         password: hashedPassword,
       });
-      console.log(`[AuthService] signup: user saved`);
+      this.logger.log('signup: user saved');
 
       const payload = { email: user.email, name: user.name };
       return {
@@ -42,9 +44,10 @@ export class AuthService {
 
   async signin(signinDto: SigninDto) {
     const { email, password } = signinDto;
-    console.log(
-      `[AuthService] signin: email=${JSON.stringify(email)} , password=${JSON.stringify(password)}`,
+    this.logger.log(
+      `signin: email=${JSON.stringify(email)} , password=${JSON.stringify(password)}`,
     );
+
     try {
       const user = await this.usersService.findByEmail(email);
       if (!user) {
@@ -57,14 +60,13 @@ export class AuthService {
         throw new UnauthorizedException('Invalid email or password');
       }
 
-      console.log(`[AuthService] signin: user=${JSON.stringify(user)}`);
       const payload = { email: user.email, name: user.name };
       return {
         accessToken: this.jwtService.sign(payload),
         user: user,
       };
     } catch (error) {
-      console.error(`[AuthService] Error Sign In user: ${error.message}`);
+      this.logger.error(`Error Sign In user: ${error.message}`);
       throw error;
     }
   }
