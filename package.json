@@ -1,6 +1,10 @@
 {
   "name": "authentication-server-nest",
   "version": "0.0.1",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
   "description": "",
   "author": "",
   "private": true,
@@ -17,7 +21,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -54,7 +59,9 @@
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^8.0.0",
     "jest": "^29.5.0",
+    "lint-staged": "^15.2.2",
     "prettier": "^3.0.0",
     "source-map-support": "^0.5.21",
     "supertest": "^6.3.3",
@@ -80,5 +87,15 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js}": [
+      "npm run lint",
+      "git add",
+      "jest --runInBand --coverage=false --findRelatedTests --testTimeout=180000"
+    ],
+    "**/*.{js,ts,tsx,scss,json}": [
+      "prettier --write"
+    ]
   }
 }

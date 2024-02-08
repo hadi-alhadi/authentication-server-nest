@@ -25,6 +25,8 @@ export class AuthController {
         statusCode: HttpStatus.CREATED,
         message: 'User has been created successfully',
         accessToken,
+        name: user.name,
+        email: user.email,
       });
     } catch (error) {
       return response.status(HttpStatus.BAD_REQUEST).json({

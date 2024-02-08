@@ -12,19 +12,6 @@ export class UsersService {
     return newStudent.save();
   }
 
-  private readonly users: IUser[] = [
-    {
-      email: 'hadi@gmail.com',
-      name: 'Hadi Alhadi',
-      password: '123456',
-    },
-    {
-      email: 'john.smith@gmail.com',
-      name: 'John Smith',
-      password: '123456',
-    },
-  ];
-
   async findByEmail(email: string): Promise<IUser | null> {
     try {
       return await this.userModel.findOne({ email }).exec();
