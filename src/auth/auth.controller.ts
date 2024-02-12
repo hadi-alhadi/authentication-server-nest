@@ -3,15 +3,15 @@ import {
   Post,
   UseGuards,
   Body,
-  HttpStatus,
-  Res,
   Get,
   Logger,
+  Request,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { SigninDto } from './dto/signinDto';
+import { SigninDto } from './dto/signin.dto';
+import { LocalAuthGuard } from './guards/local-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -20,57 +20,22 @@ export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
   @Post('/signup')
-  async signup(@Res() response, @Body() signupDto: SignupDto) {
-    try {
-      this.logger.log(`signup: signupDto=${JSON.stringify(signupDto)}`);
-      const { accessToken, user } = await this.authService.signup(signupDto);
-      return response.status(HttpStatus.CREATED).json({
-        statusCode: HttpStatus.CREATED,
-        message: 'User has been created successfully',
-        accessToken,
-        name: user.name,
-        email: user.email,
-      });
-    } catch (error) {
-      this.logger.error(`signup: error=${error.message}`);
-      return response.status(HttpStatus.BAD_REQUEST).json({
-        statusCode: HttpStatus.BAD_REQUEST,
-        message: error.message,
-      });
-    }
+  async signup(@Body() signupDto: SignupDto) {
+    this.logger.log(`signup: signupDto=${JSON.stringify(signupDto)}`);
+    const user = await this.authService.signup(signupDto);
+    return this.authService.signin(user);
   }
 
-  @Post('signin')
-  async signin(@Res() res, @Body() signinDto: SigninDto) {
-    try {
-      this.logger.log(`signin: signinDto=${JSON.stringify(signinDto)}`);
-      const { accessToken, user } = await this.authService.signin(signinDto);
-      return res.status(HttpStatus.OK).json({
-        statusCode: HttpStatus.OK,
-        message: 'Login successful',
-        accessToken,
-        name: user.name,
-        email: user.email,
-      });
-    } catch (error) {
-      this.logger.error(`signin: error=${error.message}`);
-      return res.status(HttpStatus.UNAUTHORIZED).json({
-        statusCode: HttpStatus.UNAUTHORIZED,
-        message: 'Sign In failed. Please check your credentials.',
-      });
-    }
+  @UseGuards(LocalAuthGuard)
+  @Post('/signin')
+  async signin(@Body() signInDto: SigninDto, @Request() req) {
+    this.logger.log(`signin: req.user=${JSON.stringify(req.user)}`);
+    return this.authService.signin(req.user);
   }
 
-  // @UseGuards(LocalAuthGuard)
-  // @Post('login')
-  // async login(@Request() req) {
-  //   console.log(`[AuthController] login`);
-  //   return this.authService.login(req.user);
-  // }
-
-  @Get()
   @UseGuards(JwtAuthGuard)
-  getProtectedResource() {
-    return 'This is a protected resource';
+  @Get('/protected')
+  getProfile(@Request() req) {
+    return req.user;
   }
 }

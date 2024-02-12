@@ -3,7 +3,8 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { SignupDto } from './dto/signup.dto';
-import { SigninDto } from './dto/signinDto';
+import { IUser } from '../users/users.interface';
+import omit from 'lodash/omit';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +15,33 @@ export class AuthService {
 
   private readonly logger = new Logger(AuthService.name);
 
+  async validateUser(email: string, pass: string): Promise<any> {
+    this.logger.log(`validateUser: email=${email}`);
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const isPasswordMatched = await bcrypt.compare(pass, user.password);
+
+    if (!isPasswordMatched) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+    return omit(user, ['password']);
+  }
+
+  async signin(user: IUser) {
+    this.logger.log(`signin: user=${JSON.stringify(user)}`);
+    const payload = { email: user.email, sub: user._id };
+    return {
+      accessToken: this.jwtService.sign(payload),
+      email: user.email,
+      name: user.name,
+    };
+  }
+
   async signup(signupDto: SignupDto) {
+    this.logger.log(`signup: signupDto=${JSON.stringify(signupDto)}`);
     const { name, email, password } = signupDto;
     try {
       const existingUser = await this.usersService.findByEmail(email);
@@ -24,47 +51,13 @@ export class AuthService {
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await this.usersService.signup({
+      const user = await this.usersService.create({
         name,
         email,
         password: hashedPassword,
       });
       this.logger.log('signup: user saved');
-
-      const payload = { email: user.email, name: user.name };
-      return {
-        accessToken: this.jwtService.sign(payload),
-        user: user,
-      };
-    } catch (error) {
-      console.error(`[AuthService] Error signup user: ${error.message}`);
-      throw error;
-    }
-  }
-
-  async signin(signinDto: SigninDto) {
-    const { email, password } = signinDto;
-    this.logger.log(
-      `signin: email=${JSON.stringify(email)} , password=${JSON.stringify(password)}`,
-    );
-
-    try {
-      const user = await this.usersService.findByEmail(email);
-      if (!user) {
-        throw new UnauthorizedException('Invalid email or password');
-      }
-
-      const isPasswordMatched = await bcrypt.compare(password, user.password);
-
-      if (!isPasswordMatched) {
-        throw new UnauthorizedException('Invalid email or password');
-      }
-
-      const payload = { email: user.email, name: user.name };
-      return {
-        accessToken: this.jwtService.sign(payload),
-        user: user,
-      };
+      return user;
     } catch (error) {
       this.logger.error(`Error Sign In user: ${error.message}`);
       throw error;

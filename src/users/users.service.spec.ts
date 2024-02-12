@@ -35,11 +35,13 @@ describe('UsersService', () => {
     it('should find a user by email', async () => {
       const email = 'test@example.com';
       const user: IUser = {
+        _id: '1',
         name: 'Test User',
         email: email,
         password: 'password',
       };
       jest.spyOn(userModel, 'findOne').mockReturnValueOnce({
+        lean: jest.fn().mockReturnThis(),
         exec: jest.fn().mockResolvedValueOnce(user),
       } as any);
 
@@ -51,6 +53,7 @@ describe('UsersService', () => {
     it('should return null if user is not found', async () => {
       const email = 'notfound@example.com';
       jest.spyOn(userModel, 'findOne').mockReturnValueOnce({
+        lean: jest.fn().mockReturnThis(),
         exec: jest.fn().mockResolvedValueOnce(null),
       } as any);
 
